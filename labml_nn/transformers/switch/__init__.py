@@ -77,6 +77,7 @@ class SwitchFeedForward(Module):
 
         # make copies of the FFNs
         self.experts = clone_module_list(expert, n_experts)
+        self.experts.insert(n_experts,nn.Identity())
         # Routing layer and softmax
         self.switch = nn.Linear(d_model, n_experts)
         self.softmax = nn.Softmax(dim=-1)
@@ -213,6 +214,10 @@ class SwitchTransformerLayer(Module):
         return x, counts, route_prob, n_dropped, route_prob_max
 
 
+class Identity(Module):
+    def forward(self, x,mask):
+        return x
+
 class SwitchTransformer(Module):
     """
     ## Switch Transformer
@@ -228,7 +233,9 @@ class SwitchTransformer(Module):
     def forward(self, x: torch.Tensor, mask: torch.Tensor):
         # Run through each transformer layer
         counts, route_prob, n_dropped, route_prob_max = [], [], [], []
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
+            if i == 0:
+                bla = 1
             x, f, p, n_d, p_max = layer(x=x, mask=mask)
             counts.append(f)
             route_prob.append(p)
